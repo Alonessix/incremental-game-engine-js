@@ -7,210 +7,181 @@
 
 //===
 			
-	//some constants -> if some function is not working as expected, check its return value, if any, against these errors
-			const ERR_DOES_NOT_EXIST_CODE="errdne-999";
-			const ERR_INVALID_PARAMS_CODE="errinvalid-989";
-			const SUCC_CODE="success10101010";
-	//other global variables
-			var Tracks=[];
+// Error code constants. If some function is not working as expected,
+// check its return value, if any, against these error strings.
+var ERR_DOES_NOT_EXIST_CODE = "errdne-999",
+  ERR_INVALID_PARAMS_CODE = "errinvalid-989",
+  SUCC_CODE = "success10101010", // Other global variables are below.
+  Tracks = [];
 			
-	//Function that stores common elements
-			function Common(n_attributes) {
-			
-				this.attributes=new AttributeSet(n_attributes);
-				
-				
-				//The following methods basically allow the Object containing an Attribute set to get/set/add/remove attributes directly
-				//into that set by doing Object.getAttribute(...) instead of Object.attributes.getAttribute(..) although one
-				//can even do that since these functions just use AttributeSet's methods
-				this.getAttribute=function(attr) {
-					return this.attributes.getAttribute(attr);
-				};
-				this.setAttribute=function(attr,value) {
-					return this.attributes.setAttribute(attr,value);
-				};
-				this.addAttribute=function(attr,value,ele) {
-					
-					return this.attributes.addAttribute(attr,value,ele);
-				};
-				
-				this.hasAttribute=function(attr) {
-					return this.attributes.hasAttribute(attr);
-				};
-				
-				this.removeAttribute=function(attr) {
-					return this.attributes.removeAttribute(attr);
-				};
-				
-				this.isDefined=function(a) {
-				
-					return (typeof a !=='undefined');
-				
-				};
-				
-				
-				//the next function only returns a copy of the whole attributes set, not the attributes themselves -- to iterate over the actual attributes,
-				//although not an intention of this system as these are meant to act as normal variables, you can run a for-in loop 
-				/*
-					var x=0;
-					for (i in Object.attributes)
-					{
-						//code here
-						
-						
-						x++;
-						if (x==Object.attributes.size()) break; //this is so that the user doesn't get any of the Prototype methods as attriutes
-					} 
-				
-				*/
-				//this only gives us a copy of the attributes, not the actual attributes !! It's better to use the above way or just Obj.attributes.VARIABLE
-				this.getAttributes=function() {
-				
-					return this.attributes.getAttributes();
-					
-				};
-				
-				//prototype- tracks a particular element in an html element
-				this.track=function(attr,ele,func) {
-					
-					if (typeof attr !== 'undefined' && this.hasAttribute(attr) && typeof ele !=='undefined')
-					{
-						
-						Tracks.push({container:this.attributes,name:attr,element:ele,func:func});
-					}
-					else
-						return ERR_DOES_NOT_EXIST_CODE;
-					
-				};
-				
-				//untrack an attribute that belongs to this object
-				this.untrack=function(attr) {
-					var invoker=this.constructor.name; //Common object through which this method was invoked - either Game or EntitySet or Entity 
-					//future use
-					
-					//stops tracking this.attribute's particular attribute of this particule object
-					if (typeof attr !== 'undefined')
-					{
-				
-						for (i in Tracks)
-							if (Tracks[i].container===this.attributes && Tracks[i].name==attr) delete Tracks[i];
-				
-					}
-				};
-			
-				
-				
-			};
-			
-			
-			
-			
-	//The Main Game Function! var g=new Game(); this is what we need to get started!
-			Game.prototype=new Common();
-			
-			function Game(a_fps) {
-			
+	// Function that stores common elements
+function Common(n_attributes) {
+  this.attributes = new AttributeSet(n_attributes);
+  
+  // The following methods basically allow the Object containing an Attribute set to
+  // get/set/add/remove attributes directly into that set by doing Object.getAttribute(...)
+  // instead of Object.attributes.getAttribute(..) although one can even do that since these
+  // functions just use AttributeSet's methods
+  this.getAttribute = function(attr) {
+    return this.attributes.getAttribute(attr);
+  };
+  
+  // Sets an attribute on an object.
+  this.setAttribute = function(attr, value) {
+    return this.attributes.setAttribute(attr, value);
+  };
+  
+  this.addAttribute=function (attr,value,ele) {
+    return this.attributes.addAttribute(attr, value, ele);
+  };
+  
+  this.hasAttribute = function (attr) {
+    return this.attributes.hasAttribute(attr);
+  };
 
-				Common.call(this);
-				
-				if (typeof a_fps === 'undefined')
-					 a_fps=30;//default fps
-				
-				//PRIVATE variables
-				var score=0;
-				var pointsPerSecond=0;
-				var pointsPerClick=0;
-				var fps=a_fps;
-				//var seconds=1;
-				var Timers=[];//stores objects of timed functions
-				var Flags=[];//stores flags
-				
-				
-				//PRIVILEGED PUBLIC -> If you want to add your own variables, here is where you would do it : this.<variable_name>=0; accessed by game.<variable_name>
-				
-				this.sets=[];//Holds multiple ENTITY SETS -> eg. this can hold UPGRADES, ACHIEVEMENTS, INVENTORY..etc
-							//accessed by game.entities.<entity set name>  -> eg. game.sets.UPGRADES
-								
+  this.removeAttribute = function (attr) {
+    return this.attributes.removeAttribute(attr);
+  };
 
-				//ACCESSOR METHODS
-				this.getFPS=function() { return fps; }; //get fps of game
-				
-				this.getScore = function() { return Math.ceil(score); }; //get score
-				
-				this.getPointsPerSecond=function() { return pointsPerSecond; }; //return the main pointsPerSecond that affects the score
-				
-				this.getPointsPerClick=function() { return pointsPerClick; }; //return the main pointsPerClick that affects the score
-				
-				this.getSets=function() { return this.sets; }; //returns all sets
-				
-				this.getSet=function(set_name) { //gets a particular set
-				
-					if (set_name in this.sets && typeof set_name !== 'undefined')
-						return this.sets[set_name];
-					else
-					{	
-						return ERR_DOES_NOT_EXIST_CODE;
-					}
-				
-				};
-				
-				//MUTATOR METHODS
-				
-				this.increaseScorePerSecond=function() { //TODO - make this private - doesn't make sense to have it public
-					//increment the score per second
-					score+=pointsPerSecond/fps;
-				
-				};
-				
-				this.increaseScorePerClick=function() {
-					//increment the score per click
-					score+=pointsPerClick;
-//					$('#money_value').html(game.getScore()) // -> we'll want a way to know which html element we track score in for quicker updates on low-FPS games -> integrate this with the attributes tracks system?
-					
-				
-				};
-				
-				this.addToScore=function(value) {
-					//adds 'value' to score
-					score+=value;
-					
-				
-				};
-				
-				this.addToPointsPerSecond=function(value) {
-					//adds 'value' to pointsPerSecond
-					pointsPerSecond+=value;
-				};
-				
-				this.addToPointsPerClick=function(value) {
-					//adds 'value' to pointsPerClick
-					pointsPerClick+=value;
+  this.isDefined = function (a) {
+    return (typeof a !=='undefined');
+  };
+  
+  // The next function -- `getAttributes` -- only returns a copy of the whole attributes set,
+  // not the attributes themselves, in order to iterate over the actual attributes, although not an
+  // intention of this system as these are meant to act as normal variables. You can run a for-in
+  // loop like so:
+  /*
+    var x = 0;
+    for (i in Object.attributes) {
+      // Your code here.
+      x++;
+      if (x==Object.attributes.size()) break; //this is so that the user doesn't get any of the Prototype methods as attriutes
+    } 
+  */
+  
+  // This only gives us a copy of the attributes, not the actual attributes. It's better to use the
+  // above way or just Obj.attributes.VARIABLE
+  this.getAttributes = function () {
+    return this.attributes.getAttributes();
+  };
+  
+  // Prototype -- tracks a particular element in an HTML element.
+  this.track = function (attr, ele, func) {
+    if (typeof attr !== 'undefined' && this.hasAttribute(attr) && typeof ele !=='undefined') {
+      Tracks.push({ container: this.attributes, name: attr, element: ele, func: func });
+    } else {
+      return ERR_DOES_NOT_EXIST_CODE;
+    }
+  };
+  
+  // Remove the tracker from an attribute that belongs to this.
+  this.untrack = function (attr) {
+    var invoker = this.constructor.name,
+      tracksLength = Tracks.length,
+      i;
+    // Common object through which this method was invoked - either Game or EntitySet or Entity 
+    // future use
+    
+    // stops tracking this.attribute's particular attribute of this particule object
+    if (typeof attr !== 'undefined') {
+      for (i = tracksLength; i >= 0; i -= 1) {
+        if (Tracks[i].container === this.attributes && Tracks[i].name==attr)
+          Tracks.splice(i, 1);
+        }
+      }
+		}
+	};
+};
 			
-				};
-				
-				//end single-variable game functions
-				
-				
-					
-				this.addSet=function(n_name) {
-					//adds a set to sets
+			
+			
+			
+	// The main game function! To get started, simply use `var g = new Game();`.
+	// Then you'll be ready to go!
+	Game.prototype = new Common();
+	function Game(a_fps) {
+	  Common.call(this);
+		a_fps = a_fps || 30; // Default FPS is 30. If it's not already set, set it.
+		
+		// Private variables.
+		var score = 0,
+		  pointsPerSecond = 0,
+		  pointsPerClick = 0,
+		  fps = a_fps,
+			Timers = [],
+			Flags = [];
+			
+		// TODO: remove need to edit this file to add new variables.
+		// PRIVILEGED PUBLIC: If you want to add your own variables, here is where you would do it:
+		// `this.<variable_name> = 0;`
+		// Accessed by `game.<variable_name>`.
+		
+		// `sets` holds multiple ENTITY SETS -> e/g. this can hold UPGRADES, ACHIEVEMENTS,
+		// INVENTORY etc. accessed by game.entities.<entity set name>  -> eg. `game.sets.UPGRADES`
+		this.sets = [];						
+    
+    // ACCESSOR METHODS
+		this.getFPS = function () { return fps; }; // Get game FPS
+		
+		this.getScore = function() { return Math.ceil(score); }; // Get score
+		
+		this.getPointsPerSecond = function() { return pointsPerSecond; }; 
+		// `this.getPointsPerSecond` returns the main pointsPerSecond that affects the score.
+		
+		this.getPointsPerClick = function() { return pointsPerClick; }; //return the main pointsPerClick that affects the score
+		
+		this.getSets = function() { return this.sets; }; // Returns all sets.
+		
+		this.getSet = function (set_name) { // Gets a particular set.
+		  if (set_name in this.sets && typeof set_name !== 'undefined')
+		    return this.sets[set_name];
+			else {	
+			  return ERR_DOES_NOT_EXIST_CODE;
+			}
+		};
 
-					if (!(n_name instanceof EntitySet)) //if the passed parameter is not an entity set itself
-					{	
-						
-						this.sets[n_name]=new EntitySet(n_name);//create a new empty entity set with the name given
-						return this.sets[n_name];//after adding a set, return it directly to the user for chaining/adding entities
-					}
-					else
-					{	//store the entity set
-						this.sets[n_name.getName()]=n_name;//because the user wants to add a pre-existing EntitySet --> currently if you modify one, both get modified
-						return this.sets[n_name.getName()];//return directly to user for chaining/adding entities
-					}
-					
-
-					
-					
-				};		
+		// MUTATOR METHODS
+		// TODO: make this private; it doesn't make sense to have it public.
+		this.increaseScorePerSecond = function () {
+		  // Increment the score per second.
+		  score += pointsPerSecond / fps;
+		};
+		
+		this.increaseScorePerClick = function () {
+		  //increment the score per click
+			score += pointsPerClick;
+			// $('#money_value').html(game.getScore()) // -> we'll want a way to know which html element we
+			// track score in for quicker updates on low-FPS games -> integrate this with the attributes tracks system?
+		};
+		
+		this.addToScore = function (value) {
+		  // Adds `value` to score.
+			  score += value;
+		};
+		
+		this.addToPointsPerSecond = function (value) {
+		  // Adds `value` to pointsPerSecond.
+		  pointsPerSecond += value;
+		};
+		
+		this.addToPointsPerClick=function(value) {
+		  // Adds `value` to pointsPerClick
+		  pointsPerClick += value;
+		};
+		
+		// End single-variable game functions.
+		
+		this.addSet = function (n_name) {
+		  // Adds a set to sets.
+			if (!(n_name instanceof EntitySet)) { // If `n_name` is not an EntitySet, then:
+			  this.sets[n_name] = new EntitySet(n_name); // Create a new empty entity set with the name given
+				return this.sets[n_name]; //after adding a set, return it directly to the user for chaining/adding entities
+			} else {	//store the entity set
+			  this.sets[n_name.getName()] = n_name; //because the user wants to add a pre-existing EntitySet --> currently if you modify one, both get modified
+				return this.sets[n_name.getName()]; //return directly to user for chaining/adding entities
+			}
+		};		
 				
 				this.removeSet=function(n_name) {
 				
